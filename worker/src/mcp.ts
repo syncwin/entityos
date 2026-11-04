@@ -15,6 +15,8 @@ const toolText = (obj: unknown, isError = false) => ({ content: [{ type: "text",
 export async function handleRpc(db: Db, msg: unknown): Promise<object | null> {
   if (typeof msg !== "object" || msg === null || Array.isArray(msg)) return rpcError(null, -32600, "Invalid Request");
   const m = msg as { jsonrpc?: unknown; id?: unknown; method?: unknown; params?: unknown };
+  const r = msg as { result?: unknown; error?: unknown };
+  if (m.jsonrpc === "2.0" && m.method === undefined && (r.result !== undefined || r.error !== undefined)) return null; // a JSON-RPC response from the client: accept, no reply
   if (m.jsonrpc !== "2.0" || typeof m.method !== "string") return rpcError(null, -32600, "Invalid Request");
   const hasId = m.id !== undefined;
   if (hasId && typeof m.id !== "string" && typeof m.id !== "number") return rpcError(null, -32600, "Invalid Request");

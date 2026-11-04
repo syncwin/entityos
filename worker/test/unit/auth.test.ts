@@ -62,3 +62,31 @@ test("handle: authorized ping works; GET is 405; bad JSON is 400; wrong path is 
   const wrongType = await handle(new Request("http://x/mcp", { method: "POST", headers: { ...auth, "content-type": "text/plain" }, body: "{}" }), env);
   assert.equal(wrongType.status, 415);
 });
+
+test("handle: Origin must be allowlisted (checked after auth)", async () => {
+  const auth = { authorization: `Bearer ${TOKEN}` };
+  const env = { DB: makeDb(), ENTITYOS_TOKEN: TOKEN };
+  const denied = await handle(post({ ...auth, origin: "https://evil.example" }), env);
+  assert.equal(denied.status, 403);
+  assert.deepEqual(await denied.json(), { error: "FORBIDDEN" });
+  const allowed = { ...env, ALLOWED_ORIGINS: "https://a.example, https://ok.example" };
+  assert.equal((await handle(post({ ...auth, origin: "https://ok.example" }), allowed)).status, 200);
+  assert.equal((await handle(post({ ...auth, origin: "https://evil.example" }), allowed)).status, 403);
+  assert.equal((await handle(post(auth), env)).status, 200); // no Origin header: fine
+  assert.equal((await handle(post({ origin: "https://evil.example" }), env)).status, 401); // auth first
+});
+
+test("handle: Accept must allow json, event-stream or */*", async () => {
+  const env = { DB: makeDb(), ENTITYOS_TOKEN: TOKEN };
+  const auth = { authorization: `Bearer ${TOKEN}` };
+  assert.equal((await handle(post({ ...auth, accept: "text/html" }), env)).status, 406);
+  for (const accept of ["application/json", "application/json, text/event-stream", "*/*", "text/html, */*;q=0.1"])
+    assert.equal((await handle(post({ ...auth, accept }), env)).status, 200, accept);
+});
+
+test("handle: a JSON-RPC response from the client gets 202", async () => {
+  const env = { DB: makeDb(), ENTITYOS_TOKEN: TOKEN };
+  const auth = { authorization: `Bearer ${TOKEN}` };
+  assert.equal((await handle(post(auth, '{"jsonrpc":"2.0","id":1,"result":{}}'), env)).status, 202);
+  assert.equal((await handle(post(auth, '{"jsonrpc":"2.0","id":1,"error":{"code":-1,"message":"x"}}'), env)).status, 202);
+});

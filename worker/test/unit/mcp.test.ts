@@ -17,8 +17,19 @@ test("initialize, notification, unknown method, unknown tool, malformed", async 
   assert.equal(await handleRpc(db, { jsonrpc: "2.0", method: "notifications/initialized" }), null);
   assert.equal(((await handleRpc(db, { jsonrpc: "2.0", id: 1, method: "nope" })) as { error: { code: number } }).error.code, -32601);
   assert.equal(((await handleRpc(db, { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "put_doc" } })) as { error: { code: number } }).error.code, -32602);
+  assert.equal(await handleRpc(db, { jsonrpc: "2.0", id: 1, result: {} }), null);
+  assert.equal(await handleRpc(db, { jsonrpc: "2.0", id: 1, error: { code: -1, message: "x" } }), null);
   assert.equal(((await handleRpc(db, [])) as { error: { code: number } }).error.code, -32600);
   assert.equal(((await handleRpc(db, { id: 1, method: "ping" })) as { error: { code: number } }).error.code, -32600);
+});
+
+test("UNKNOWN-only (stub): get_context, get_sop, get_policy return UNKNOWN for a valid entity", async () => {
+  const db = makeDb();
+  for (const [name, args] of [
+    ["get_context", { entity: "example-owner", section: "profile" }],
+    ["get_sop", { entity: "example-owner", sop_id: "x" }],
+    ["get_policy", { entity: "example-owner", policy_id: "x" }],
+  ] as const) assert.equal((await call(db, name, args)).data.error, "UNKNOWN", name);
 });
 
 test("tools return consistent {error, message} on bad input", async () => {

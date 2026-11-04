@@ -51,7 +51,7 @@ npm run test:e2e                   # wrangler dev --local + local D1, all 7 tool
 
 Run by hand: put a 32+ character token in `worker/.dev.vars` as `ENTITYOS_TOKEN=...` (git-ignored), apply migrations and load the index (see AGENTS.md), then `npm run dev` and POST JSON-RPC to `http://127.0.0.1:8787/mcp` with `Authorization: Bearer <token>`.
 
-Tools (read-only): `list_entities`, `get_context`, `get_entity`, `get_sop`, `get_policy`, `get_source`, `search_context`. Missing context returns `{"error":"UNKNOWN",...}`. Markdown files stay canonical; the D1 index is rebuilt from them and files win.
+Tools (read-only): `list_entities`, `get_context` (UNKNOWN-only, stub), `get_entity`, `get_sop` (UNKNOWN-only, stub), `get_policy` (UNKNOWN-only, stub), `get_source`, `search_context`. Missing context returns `{"error":"UNKNOWN",...}`. Browser-origin requests (an `Origin` header) get 403 unless listed in the `ALLOWED_ORIGINS` var (comma-separated, empty by default). Markdown files stay canonical; the D1 index is rebuilt from them and files win.
 
 ## License
 

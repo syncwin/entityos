@@ -3,7 +3,7 @@ import { isAuthorized, secretOk } from "./auth.ts";
 import type { Db } from "./db.ts";
 import { handleRpc } from "./mcp.ts";
 
-export interface Env { DB: Db; ENTITYOS_TOKEN?: string }
+export interface Env { DB: Db; ENTITYOS_TOKEN?: string; ALLOWED_ORIGINS?: string }
 
 const MAX_BODY = 16 * 1024;
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -25,9 +25,19 @@ export async function handle(req: Request, env: Env): Promise<Response> {
   if (!(await isAuthorized(req.headers.get("authorization"), env.ENTITYOS_TOKEN)))
     return err(401, "UNAUTHORIZED", undefined, { "www-authenticate": "Bearer" });
 
+  // Browser-origin requests are refused unless allowlisted (ALLOWED_ORIGINS, comma-separated; empty by default).
+  const origin = req.headers.get("origin");
+  if (origin !== null) {
+    const allowed = (env.ALLOWED_ORIGINS ?? "").split(",").map((o) => o.trim()).filter(Boolean);
+    if (!allowed.includes(origin)) return err(403, "FORBIDDEN");
+  }
+
   if (req.method !== "POST") return err(405, "METHOD_NOT_ALLOWED", "Use POST.", { allow: "POST" });
   const ct = req.headers.get("content-type") ?? "";
   if (!ct.toLowerCase().startsWith("application/json")) return err(415, "UNSUPPORTED_MEDIA_TYPE", "Content-Type must be application/json.");
+  const accept = req.headers.get("accept");
+  if (accept !== null && !/application\/json|text\/event-stream|\*\/\*/i.test(accept))
+    return err(406, "NOT_ACCEPTABLE", "Accept must allow application/json.");
   if (Number(req.headers.get("content-length") ?? 0) > MAX_BODY) return err(413, "PAYLOAD_TOO_LARGE");
   const text = await req.text();
   if (text.length > MAX_BODY) return err(413, "PAYLOAD_TOO_LARGE");
