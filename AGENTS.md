@@ -1,6 +1,6 @@
 # AGENTS.md (canonical, tool-neutral)
 
-EntityOS template: a white-label personal context store of sourced claims (facts about an owner, with provenance). Public template, MIT, no real data. Phase 0 only: claim and source schemas; no Worker, DB or CI yet. Rules for any AI tool or contributor.
+EntityOS template: a white-label personal context store of sourced claims (facts about an owner, with provenance). Public template, MIT, no real data. Phases 0-3 (local only): schemas, a read-only MCP Worker (`worker/`) and a derived D1 index; no CI, no deploy. Rules for any AI tool or contributor.
 
 ## Repo map
 
@@ -10,13 +10,20 @@ EntityOS template: a white-label personal context store of sourced claims (facts
 | `config/owner.example.yaml` | Placeholder owner config (real `config/owner.yaml` lives only in a private instance) |
 | `docs/claims-and-sources.md` | Field tables, rules, open questions |
 | `examples/` | Fake sample claims and sources |
-| `scripts/validate.py` | Validator (stdlib only) |
+| `scripts/validate.py` | Validator (needs `pyyaml`) |
+| `scripts/index/build_index.py` | Builds the derived D1 index (SQL) from the Markdown files |
+| `worker/` | Cloudflare Worker: 7 read-only MCP tools at `/mcp`, `migrations/`, `test/` |
 | `.claude/ownership.md` | Owner and steward per path (obey it) |
 
 ## Commands
 
 - Validate (run before every commit): `python scripts/validate.py`
-- No build, lint, formatter or other test suite exists.
+- Worker (run in `worker/`; `npm install` first): `npm run typecheck`, `npm test` (unit), `npm run test:e2e` (`wrangler dev --local` + local D1 against the examples; reports PASS/FAIL/NOT RUN per check).
+- Build index SQL: `python scripts/index/build_index.py --out <file>`, then `npx wrangler d1 execute entityos-db --local --file <file>`.
+- LOCAL ONLY until the owner confirms names: never run `wrangler deploy`, `wrangler d1 create`, `--remote` or `wrangler login`. Names `entityos-worker` / `entityos-db` are placeholders; no account or database IDs in the repo.
+- Secret `ENTITYOS_TOKEN` (32+ chars) goes in git-ignored `worker/.dev.vars` locally, or a Worker secret in a private instance. Never in a file that is committed.
+- Migrations in `worker/migrations/` are numbered and additive-only; the index is rebuilt from files (files win). The Worker has no write tools (PRD section 13).
+- No lint or formatter exists.
 
 ## Rules
 

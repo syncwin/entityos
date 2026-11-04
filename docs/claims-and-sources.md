@@ -41,3 +41,17 @@ Entities are registered in `config/owner.yaml` as `entities[]` with `id`, `type`
 - Missing context is `UNKNOWN`, never guessed. Conflicting records surface the conflict.
 - Agents only draft; a human commit promotes.
 - `python scripts/validate.py` (needs `pyyaml`) checks all of the above.
+
+## MCP tool arguments (worker)
+
+The PRD names the 7 tools and gives `search_context(entity, query)` plus `types` and `limit` (REST search). The rest are inferred and need owner confirmation:
+
+| Tool | Arguments | Status |
+|---|---|---|
+| `list_entities` | none | inferred |
+| `get_context` | `entity`, `section` (`profile` or `brand`) | `section` inferred from REST `/profile`, `/brand`; UNKNOWN until profile/brand records exist (TODO) |
+| `get_entity` | `entity` | inferred |
+| `get_sop` | `entity`, `sop_id` | UNKNOWN until SOP pointers exist (TODO) |
+| `get_policy` | `entity`, `policy_id` | UNKNOWN until policies exist (TODO) |
+| `get_source` | `entity`, `source_id` | inferred |
+| `search_context` | `entity`, `query`, `types` (`claim`, `source`), `limit` (1-20, default 5) | PRD |

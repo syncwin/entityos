@@ -1,0 +1,14 @@
+# Placeholder config: names and IDs are NOT confirmed. Confirm with owner before any deploy.
+name = "entityos-worker"            # placeholder, confirm with owner
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "entityos-db"       # placeholder, confirm with owner
+# database_id is intentionally absent. A private instance adds its own after creating its D1.
+# Local dev/test works without it (wrangler dev --local uses a local SQLite store).
+migrations_dir = "migrations"
+
+# Secret (never put in this file): ENTITYOS_TOKEN, 32+ chars.
+# Local: put it in worker/.dev.vars (git-ignored). Deployed: set it as a Worker secret in your own account.
