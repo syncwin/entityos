@@ -3,3 +3,7 @@
 node_modules/
 __pycache__/
 *.pyc
+worker/.dev.vars
+worker/.wrangler/
+worker/dist/
+*.local.sql
