@@ -4,13 +4,72 @@
   "title": "EntityOS claim",
   "description": "One atomic, individually sourced fact. PRD section 6.",
   "type": "object",
-  "required": ["id", "statement", "status", "source_id", "verified_at"],
+  "required": [
+    "id",
+    "entity_id",
+    "statement",
+    "status",
+    "source_id"
+  ],
   "additionalProperties": false,
   "properties": {
-    "id": { "type": "string", "minLength": 1, "description": "Unique per entity." },
-    "statement": { "type": "string", "minLength": 1, "description": "One atomic fact." },
-    "status": { "type": "string", "enum": ["verified", "unverified", "deprecated", "conflicting", "draft"] },
-    "source_id": { "type": "string", "minLength": 1, "description": "Required: no claim without a source." },
-    "verified_at": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Date; null if unverified." }
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique across the vault."
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1,
+      "description": "One atomic fact."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "unverified",
+        "deprecated",
+        "conflicting",
+        "draft"
+      ]
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Required: no claim without a source."
+    },
+    "verified_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Optional; null allowed. Required (date) when status is verified."
+    },
+    "entity_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Must exist in config/owner.yaml."
+    }
+  },
+  "if": {
+    "properties": {
+      "status": {
+        "const": "verified"
+      }
+    },
+    "required": [
+      "status"
+    ]
+  },
+  "then": {
+    "required": [
+      "verified_at"
+    ],
+    "properties": {
+      "verified_at": {
+        "type": "string"
+      }
+    }
   }
 }

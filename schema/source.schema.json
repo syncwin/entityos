@@ -4,13 +4,81 @@
   "title": "EntityOS source",
   "description": "Provenance for claims. PRD section 6.",
   "type": "object",
-  "required": ["id", "title", "type"],
+  "required": [
+    "id",
+    "entity_id",
+    "title",
+    "type"
+  ],
   "additionalProperties": false,
   "properties": {
-    "id": { "type": "string", "minLength": 1, "description": "Unique per entity." },
-    "title": { "type": "string", "minLength": 1 },
-    "url": { "type": "string", "description": "Optional if the source is a private doc." },
-    "type": { "type": "string", "enum": ["official", "first_party", "government", "documentation", "internal", "third_party", "unknown"] },
-    "verified_at": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}-\\d{2}$", "description": "Date. TODO(PRD): whether required, and whether null is allowed, is not stated." }
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique across the vault."
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "url": {
+      "type": "string",
+      "description": "Optional if the source is a private doc."
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "official",
+        "first_party",
+        "government",
+        "documentation",
+        "internal",
+        "third_party",
+        "unknown"
+      ]
+    },
+    "verified_at": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "description": "Optional; null allowed. Required (date) when status is verified."
+    },
+    "entity_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Must exist in config/owner.yaml."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "verified",
+        "unverified",
+        "deprecated",
+        "conflicting",
+        "draft"
+      ]
+    }
+  },
+  "if": {
+    "properties": {
+      "status": {
+        "const": "verified"
+      }
+    },
+    "required": [
+      "status"
+    ]
+  },
+  "then": {
+    "required": [
+      "verified_at"
+    ],
+    "properties": {
+      "verified_at": {
+        "type": "string"
+      }
+    }
   }
 }
