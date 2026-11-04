@@ -8,7 +8,7 @@ This repository is the **public template** (MIT). **No real data belongs here**:
 
 | Path | Purpose |
 |---|---|
-| `schema/claim.schema.json`, `schema/source.schema.json` | The claim and source shapes |
+| `schema/*.schema.json` | The claim, source and owner shapes |
 | `docs/claims-and-sources.md` | Field tables, rules, open questions |
 | `config/owner.example.yaml` | Placeholder owner config |
 | `examples/` | Fake sample claims and sources |

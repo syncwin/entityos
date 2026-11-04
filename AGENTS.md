@@ -6,7 +6,7 @@ EntityOS template: a white-label personal context store of sourced claims (facts
 
 | Path | Purpose |
 |---|---|
-| `schema/` | JSON Schemas: `claim.schema.json`, `source.schema.json` |
+| `schema/` | JSON Schemas: `claim.schema.json`, `source.schema.json`, `owner.schema.json` |
 | `config/owner.example.yaml` | Placeholder owner config (real `config/owner.yaml` lives only in a private instance) |
 | `docs/claims-and-sources.md` | Field tables, rules, open questions |
 | `examples/` | Fake sample claims and sources |

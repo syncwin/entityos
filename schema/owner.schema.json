@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/syncwin/entityos/schema/owner.schema.json",
+  "title": "EntityOS owner config",
+  "description": "Entity registry in config/owner.yaml.",
+  "type": "object",
+  "required": ["entities"],
+  "additionalProperties": false,
+  "properties": {
+    "entities": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "type", "name"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "minLength": 1, "description": "Short, url-safe; unique across the vault." },
+          "type": { "type": "string", "enum": ["person", "brand", "organization"] },
+          "name": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
