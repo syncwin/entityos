@@ -1,0 +1,10 @@
+# Placeholder values only. In a private instance, copy to config/owner.yaml and fill in.
+# Nothing outside config/owner.yaml may reference an owner's name or brand directly.
+person_id: example-owner     # short, url-safe; becomes the root entity ID
+person_name: Example Person
+brands:
+  - id: example-brand
+    type: brand
+  - id: example-company
+    type: business
+# TODO(PRD): no schema for owner.yaml is defined (allowed `type` values, required fields).
