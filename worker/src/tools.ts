@@ -39,7 +39,7 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "get_context",
-    description: "Get a context section (profile or brand) for an entity. UNKNOWN until profile/brand records are defined and indexed.",
+    description: "Get a context section (profile or brand) for an entity. Looks up the context with id 'ctx-<entity>-<section>'. UNKNOWN if there is none.",
     inputSchema: {
       type: "object",
       properties: { entity: entityProp, section: { type: "string", enum: [...v.CONTEXT_SECTIONS] } },
@@ -47,9 +47,10 @@ export const TOOLS: Tool[] = [
     },
     async run(db, args) {
       const a = parse(v.getContext(args));
-      if (!(await q.getEntity(db, a.entity))) throw unknown();
-      // TODO: profile and brand have no schema or index table yet (Phase 0 defines claims and sources only).
-      throw unknown(`No ${a.section} record for this entity.`);
+      // Decided by the owner: the context id is ctx-<entity>-<section>.
+      const r = await q.getDoc(db, "contexts", a.entity, `ctx-${a.entity}-${a.section}`);
+      if (!r) throw unknown(`No ${a.section} record for this entity.`);
+      return r;
     },
   },
   {
@@ -65,30 +66,30 @@ export const TOOLS: Tool[] = [
   },
   {
     name: "get_sop",
-    description: "Get an SOP pointer by id. UNKNOWN until SOP pointers are defined and indexed.",
+    description: "Get an SOP (Markdown body with status) by id. UNKNOWN if there is none.",
     inputSchema: {
       type: "object", properties: { entity: entityProp, sop_id: { type: "string" } },
       required: ["entity", "sop_id"], additionalProperties: false,
     },
     async run(db, args) {
       const a = parse(v.entityAndId("sop_id")(args));
-      if (!(await q.getEntity(db, a.entity))) throw unknown();
-      // TODO: SOP pointers (PRD section 6) have no schema or index table yet.
-      throw unknown("No SOP with this id.");
+      const r = await q.getDoc(db, "sops", a.entity, a.id);
+      if (!r) throw unknown("No SOP with this id.");
+      return r;
     },
   },
   {
     name: "get_policy",
-    description: "Get a policy by id. UNKNOWN until policies are defined and indexed.",
+    description: "Get a policy (Markdown body with status) by id. UNKNOWN if there is none.",
     inputSchema: {
       type: "object", properties: { entity: entityProp, policy_id: { type: "string" } },
       required: ["entity", "policy_id"], additionalProperties: false,
     },
     async run(db, args) {
       const a = parse(v.entityAndId("policy_id")(args));
-      if (!(await q.getEntity(db, a.entity))) throw unknown();
-      // TODO: policies have no schema or index table yet.
-      throw unknown("No policy with this id.");
+      const r = await q.getDoc(db, "policies", a.entity, a.id);
+      if (!r) throw unknown("No policy with this id.");
+      return r;
     },
   },
   {

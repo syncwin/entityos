@@ -23,13 +23,42 @@ test("initialize, notification, unknown method, unknown tool, malformed", async 
   assert.equal(((await handleRpc(db, { id: 1, method: "ping" })) as { error: { code: number } }).error.code, -32600);
 });
 
-test("UNKNOWN-only (stub): get_context, get_sop, get_policy return UNKNOWN for a valid entity", async () => {
+test("get_context, get_sop, get_policy return the example records", async () => {
+  const db = makeDb();
+  let r = await call(db, "get_context", { entity: "example-owner", section: "profile" });
+  assert.deepEqual(Object.keys(r.data), ["id", "entity_id", "title", "status", "updated", "body"]);
+  assert.equal(r.data.id, "ctx-example-owner-profile");
+  assert.equal(r.data.updated, "2030-01-03");
+  assert.match(r.data.body, /Fake sample context/);
+  assert.equal((await call(db, "get_context", { entity: "example-owner", section: "brand" })).data.id, "ctx-example-owner-brand");
+  r = await call(db, "get_sop", { entity: "example-owner", sop_id: "sop-example-intake" });
+  assert.equal(r.data.title, "Example intake procedure");
+  assert.match(r.data.body, /Fake sample SOP/);
+  r = await call(db, "get_policy", { entity: "example-owner", policy_id: "policy-example-no-go" });
+  assert.equal(r.data.status, "unverified");
+  assert.match(r.data.body, /Fake sample policy/);
+});
+
+test("get_context, get_sop, get_policy: missing or other-entity records give UNKNOWN", async () => {
   const db = makeDb();
   for (const [name, args] of [
-    ["get_context", { entity: "example-owner", section: "profile" }],
-    ["get_sop", { entity: "example-owner", sop_id: "x" }],
-    ["get_policy", { entity: "example-owner", policy_id: "x" }],
-  ] as const) assert.equal((await call(db, name, args)).data.error, "UNKNOWN", name);
+    ["get_context", { entity: "example-brand", section: "profile" }],
+    ["get_context", { entity: "nobody", section: "profile" }],
+    ["get_sop", { entity: "example-owner", sop_id: "missing" }],
+    ["get_sop", { entity: "example-company", sop_id: "sop-example-intake" }],
+    ["get_policy", { entity: "example-owner", policy_id: "missing" }],
+    ["get_policy", { entity: "example-brand", policy_id: "policy-example-no-go" }],
+  ] as const) {
+    const r = await call(db, name, args);
+    assert.equal(r.isError, true, name);
+    assert.equal(r.data.error, "UNKNOWN", name);
+  }
+});
+
+test("get_sop and get_policy reject SQL-looking ids and treat valid unknown ids as UNKNOWN", async () => {
+  const db = makeDb();
+  assert.equal((await call(db, "get_sop", { entity: "example-owner", sop_id: "x' OR '1'='1" })).data.error, "INVALID_INPUT");
+  assert.equal((await call(db, "get_policy", { entity: "example-owner", policy_id: "a.b-c_d" })).data.error, "UNKNOWN");
 });
 
 test("tools return consistent {error, message} on bad input", async () => {
