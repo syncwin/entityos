@@ -31,6 +31,20 @@ A **claim** is one atomic, individually sourced fact. A **source** is the record
 | `status` | enum | Optional; same values as claims |
 | `verified_at` | date or null | Optional, null allowed; **required (date) when `status: verified`** |
 
+## Context, SOP and policy (front matter)
+
+Same file style as claims and sources. Folders: `vault/contexts/`, `vault/sops/`, `vault/policies/` (examples in `examples/contexts|sops|policies/`). Schemas: `schema/context.schema.json`, `schema/sop.schema.json`, `schema/policy.schema.json`. The three share one field list; the Markdown body is the content.
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | string | Unique across the vault |
+| `entity_id` | string | Required; must exist in `config/owner.yaml` |
+| `title` | string | |
+| `status` | enum | Same values as claims (`verified`, `unverified`, `deprecated`, `conflicting`, `draft`); agents never set `verified` |
+| `updated` | date | `YYYY-MM-DD`, last change |
+
+`get_sop` and `get_policy` look the record up by `id` (`sop_id`, `policy_id`). `get_context` maps `section` (`profile` or `brand`) to the id `ctx-<entity>-<section>`, for example `ctx-example-owner-profile`. This id convention is decided by the owner. Contexts, SOPs and policies are also written to the FTS table, but `search_context` still searches claims and sources only.
+
 ## Entities
 
 Entities are registered in `config/owner.yaml` as `entities[]` with `id`, `type` (`person`, `brand`, `organization`) and `name`. Ids are unique across the whole vault (entities, claims and sources share one id space).
@@ -49,9 +63,9 @@ The PRD names the 7 tools and gives `search_context(entity, query)` plus `types`
 | Tool | Arguments | Status |
 |---|---|---|
 | `list_entities` | none | inferred |
-| `get_context` (UNKNOWN-only, stub) | `entity`, `section` (`profile` or `brand`) | `section` inferred from REST `/profile`, `/brand`; UNKNOWN until profile/brand records exist (TODO) |
+| `get_context` | `entity`, `section` (`profile` or `brand`) | `section` inferred from REST `/profile`, `/brand`; reads context `ctx-<entity>-<section>`, UNKNOWN if missing |
 | `get_entity` | `entity` | inferred |
-| `get_sop` (UNKNOWN-only, stub) | `entity`, `sop_id` | UNKNOWN until SOP pointers exist (TODO) |
-| `get_policy` (UNKNOWN-only, stub) | `entity`, `policy_id` | UNKNOWN until policies exist (TODO) |
+| `get_sop` | `entity`, `sop_id` | reads the SOP file record, UNKNOWN if missing |
+| `get_policy` | `entity`, `policy_id` | reads the policy file record, UNKNOWN if missing |
 | `get_source` | `entity`, `source_id` | inferred |
 | `search_context` | `entity`, `query`, `types` (`claim`, `source`), `limit` (1-20, default 5) | PRD |

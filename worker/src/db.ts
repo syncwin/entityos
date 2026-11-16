@@ -27,6 +27,15 @@ export async function getSource(db: Db, entity: string, id: string): Promise<Row
   ).bind(entity, id).first();
 }
 
+export type DocTable = "contexts" | "sops" | "policies";
+
+/** One context, SOP or policy by id, scoped to the entity. Table name comes from a fixed union, never from input. */
+export async function getDoc(db: Db, table: DocTable, entity: string, id: string): Promise<Row | null> {
+  return db.prepare(
+    `SELECT id, entity_id, title, status, updated, body FROM ${table} WHERE entity_id = ? AND id = ?`,
+  ).bind(entity, id).first();
+}
+
 /** Turn free text into a safe FTS5 query: quoted word tokens, ANDed. Returns null if no tokens. */
 export function ftsQuery(text: string): string | null {
   const words = text.toLowerCase().match(/[\p{L}\p{N}]+/gu);

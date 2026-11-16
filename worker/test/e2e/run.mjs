@@ -26,13 +26,14 @@ const CHECKS = [
   "auth: wrong token -> 401 without detail",
   "mcp: initialize + tools/list = 7 PRD tools",
   "tool list_entities",
-  "tool get_context (UNKNOWN-only stub)",
+  "tool get_context",
   "tool get_entity",
-  "tool get_sop (UNKNOWN-only stub)",
-  "tool get_policy (UNKNOWN-only stub)",
+  "tool get_sop",
+  "tool get_policy",
   "tool get_source",
   "tool search_context",
   "tool search_context rejects invalid input",
+  "tools get_context, get_sop, get_policy: missing record -> UNKNOWN",
 ];
 const results = new Map();
 const pass = (n) => results.set(n, "PASS");
@@ -90,19 +91,21 @@ async function main() {
   let t = await tool("list_entities", {});
   ok(CHECKS[6], !t.isError && t.data.entities.map((e) => e.id).join() === "example-brand,example-company,example-owner", JSON.stringify(t.data));
   t = await tool("get_context", { entity: "example-owner", section: "profile" });
-  ok(CHECKS[7], t.isError && t.data.error === "UNKNOWN", JSON.stringify(t.data)); // profile not in schema yet: UNKNOWN is the specified behaviour
+  ok(CHECKS[7], !t.isError && t.data.id === "ctx-example-owner-profile" && t.data.entity_id === "example-owner" && t.data.status === "draft" && t.data.updated === "2030-01-03" && t.data.body.includes("Fake sample context"), JSON.stringify(t.data));
   t = await tool("get_entity", { entity: "example-company" });
   ok(CHECKS[8], !t.isError && t.data.name === "Example Company" && t.data.claim_count === 1 && t.data.source_count === 1, JSON.stringify(t.data));
-  t = await tool("get_sop", { entity: "example-owner", sop_id: "content-seo-strategy" });
-  ok(CHECKS[9], t.isError && t.data.error === "UNKNOWN", JSON.stringify(t.data));
-  t = await tool("get_policy", { entity: "example-owner", policy_id: "no-go" });
-  ok(CHECKS[10], t.isError && t.data.error === "UNKNOWN", JSON.stringify(t.data));
+  t = await tool("get_sop", { entity: "example-owner", sop_id: "sop-example-intake" });
+  ok(CHECKS[9], !t.isError && t.data.title === "Example intake procedure" && t.data.body.includes("Fake sample SOP"), JSON.stringify(t.data));
+  t = await tool("get_policy", { entity: "example-owner", policy_id: "policy-example-no-go" });
+  ok(CHECKS[10], !t.isError && t.data.status === "unverified" && t.data.body.includes("Fake sample policy"), JSON.stringify(t.data));
   t = await tool("get_source", { entity: "example-company", source_id: "source-example-site" });
   ok(CHECKS[11], !t.isError && t.data.url === "https://example.com/about" && t.data.verified_at === "2030-01-02", JSON.stringify(t.data));
   t = await tool("search_context", { entity: "example-company", query: "founded", types: ["claim"], limit: 3 });
   ok(CHECKS[12], !t.isError && t.data.results?.[0]?.id === "claim-example-founded" && t.data.results[0].status === "verified", JSON.stringify(t.data));
   t = await tool("search_context", { entity: "example-company", query: "founded", limit: 999 });
   ok(CHECKS[13], t.isError && t.data.error === "INVALID_INPUT", JSON.stringify(t.data));
+  const miss = [await tool("get_context", { entity: "example-brand", section: "profile" }), await tool("get_sop", { entity: "example-owner", sop_id: "missing" }), await tool("get_policy", { entity: "example-company", policy_id: "policy-example-no-go" })];
+  ok(CHECKS[14], miss.every((m) => m.isError && m.data.error === "UNKNOWN"), JSON.stringify(miss.map((m) => m.data)));
 }
 
 try {

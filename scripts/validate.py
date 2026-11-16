@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate example claims and sources against the schemas.
+"""Validate example claims, sources, contexts, SOPs and policies against the schemas.
 
 Parses Markdown front matter (pyyaml) and checks it with a small JSON Schema checker
 (keywords used here, incl. if/then/const). Also checks entity registry, id uniqueness
@@ -7,6 +7,7 @@ across all files, and that every claim's source_id exists.
 """
 import datetime
 import json
+import argparse
 import re
 import sys
 from pathlib import Path
@@ -14,6 +15,7 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
+DOCS = {"context": "contexts", "sop": "sops", "policy": "policies"}  # type -> folder and table
 TYPES = {"object": dict, "array": list, "string": str, "boolean": bool, "null": type(None)}
 
 
@@ -70,9 +72,9 @@ def front_matter(p):
     return d
 
 
-def load_dir(sub, schema, errs):
+def load_dir(base, sub, schema, errs):
     rows = []
-    for p in sorted((ROOT / "examples" / sub).glob("*.md")):
+    for p in sorted((base / sub).glob("*.md")):  # a missing folder yields no files
         d = front_matter(p)
         if d is None:
             errs.append(f"{p.name}: no YAML front matter")
@@ -83,27 +85,41 @@ def load_dir(sub, schema, errs):
 
 
 def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--vault", default="examples", help="folder holding claims/, sources/, contexts/, sops/ and policies/")
+    ap.add_argument("--config", default="config/owner.example.yaml", help="owner entity registry")
+    a = ap.parse_args()
+    vault, cfg = ROOT / a.vault, ROOT / a.config
     errs = []
-    owner = yaml.safe_load((ROOT / "config/owner.example.yaml").read_text(encoding="utf-8"))
+    owner = yaml.safe_load(cfg.read_text(encoding="utf-8"))
     errs += check(owner, load("schema/owner.schema.json"), "owner")
     entities = owner.get("entities", []) if isinstance(owner, dict) else []
     entity_ids = [e.get("id") for e in entities if isinstance(e, dict)]
-    claims = load_dir("claims", load("schema/claim.schema.json"), errs)
-    sources = load_dir("sources", load("schema/source.schema.json"), errs)
-    all_ids = entity_ids + [d.get("id") for _, d in claims + sources]
+    claims = load_dir(vault, "claims", load("schema/claim.schema.json"), errs)
+    sources = load_dir(vault, "sources", load("schema/source.schema.json"), errs)
+    docs = {}  # context, sop, policy: same shape, entity in `entity_id`
+    for kind, folder in DOCS.items():
+        docs[kind] = load_dir(vault, folder, load(f"schema/{kind}.schema.json"), errs)
+    all_docs = [x for rows in docs.values() for x in rows]
+    all_ids = entity_ids + [d.get("id") for _, d in claims + sources + all_docs]
     dup = sorted({i for i in all_ids if all_ids.count(i) > 1})
     if dup:
         errs.append(f"ids not globally unique: {dup}")
     for name, d in claims + sources:
         if d.get("entity_id") not in entity_ids:
             errs.append(f"{name}: entity_id {d.get('entity_id')!r} not in owner entities")
+    for name, d in all_docs:
+        if d.get("entity_id") not in entity_ids:
+            errs.append(f"{name}: entity_id {d.get('entity')!r} not in owner entities")
     source_ids = {d.get("id") for _, d in sources}
     for name, d in claims:
         if d.get("source_id") not in source_ids:
             errs.append(f"{name}: source_id {d.get('source_id')!r} not found in sources")
-    print(f"owner.example.yaml: {len(entities)} entities checked")
-    print(f"examples/claims: {len(claims)} claims checked")
-    print(f"examples/sources: {len(sources)} sources checked")
+    print(f"{a.config}: {len(entities)} entities checked")
+    print(f"{a.vault}/claims: {len(claims)} claims checked")
+    print(f"{a.vault}/sources: {len(sources)} sources checked")
+    for kind, rows in docs.items():
+        print(f"{a.vault}/{DOCS[kind]}: {len(rows)} {kind} files checked")
     if errs:
         print("FAIL")
         print("\n".join(errs))

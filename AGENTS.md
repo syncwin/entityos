@@ -6,10 +6,10 @@ EntityOS template: a white-label personal context store of sourced claims (facts
 
 | Path | Purpose |
 |---|---|
-| `schema/` | JSON Schemas: `claim.schema.json`, `source.schema.json`, `owner.schema.json` |
+| `schema/` | JSON Schemas: `claim`, `source`, `owner`, `context`, `sop`, `policy` (`<name>.schema.json`) |
 | `config/owner.example.yaml` | Placeholder owner config (real `config/owner.yaml` lives only in a private instance) |
 | `docs/claims-and-sources.md` | Field tables, rules, open questions |
-| `examples/` | Fake sample claims and sources |
+| `examples/` | Fake sample claims, sources, contexts, SOPs and policies |
 | `scripts/validate.py` | Validator (needs `pyyaml`) |
 | `scripts/index/build_index.py` | Builds the derived D1 index (SQL) from the Markdown files |
 | `worker/` | Cloudflare Worker: 7 read-only MCP tools at `/mcp`, `migrations/`, `test/` |
