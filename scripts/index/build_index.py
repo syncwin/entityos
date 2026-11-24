@@ -47,6 +47,19 @@ def load_dir(directory, schema, errs):
     return rows
 
 
+TABLES = ("entities", "sources", "claims", "contexts", "sops", "policies", "search_fts", "index_meta")
+
+
+def with_prefix(sql, prefix):
+    """Rename the index tables in the generated SQL (e.g. prefix 'eo_' for the LifeOS database, migration 0008)."""
+    if not prefix:
+        return sql
+    if not re.fullmatch(r"[a-z][a-z0-9_]{0,15}", prefix):
+        raise ValueError("--prefix must be lowercase letters, digits or _")
+    names = "|".join(TABLES)
+    return re.sub(rf"^((?:INSERT INTO|DELETE FROM) )({names})\b", lambda m: m.group(1) + prefix + m.group(2), sql, flags=re.M)
+
+
 DOCS = v.DOCS  # type -> folder and table; same shape: id, entity_id, title, status, updated, body
 
 
@@ -116,6 +129,7 @@ def main():
     ap.add_argument("--sources", default=str(ROOT / "examples/sources"))
     for k in DOCS:
         ap.add_argument(f"--{DOCS[k]}", default=str(ROOT / "examples" / DOCS[k]))
+    ap.add_argument("--prefix", default="", help="table name prefix, e.g. eo_ to load into the LifeOS database (lifeos-db)")
     ap.add_argument("--out", default=str(ROOT / "worker/.wrangler/index.local.sql"))
     a = ap.parse_args()
     sql, errs, counts = build(a.owner, a.claims, a.sources, {k: getattr(a, DOCS[k]) for k in DOCS})
@@ -123,6 +137,7 @@ def main():
         print("FAIL")
         print("\n".join(errs))
         return 1
+    sql = with_prefix(sql, a.prefix)
     out = Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(sql, encoding="utf-8")
